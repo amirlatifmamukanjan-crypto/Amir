@@ -1,0 +1,304 @@
+{
+  "entities": {
+    "School": {
+      "title": "School",
+      "description": "Root workspace configuration for Ayesha Amir Nursing School including owner identity and local portal credentials.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "description": "Firebase Auth UID of the school administrator.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "schoolName": {
+          "type": "string",
+          "description": "Display name of the nursing school.",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "campus": {
+          "type": "string",
+          "description": "Campus city or branch name.",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "adminUser": {
+          "type": "string",
+          "description": "Local offline portal admin username.",
+          "minLength": 1,
+          "maxLength": 40
+        },
+        "adminPass": {
+          "type": "string",
+          "description": "Local offline portal admin password.",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when workspace was initialized."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of the latest update."
+        }
+      },
+      "required": ["ownerId", "schoolName", "campus", "adminUser", "adminPass", "createdAt", "updatedAt"]
+    },
+    "Student": {
+      "title": "Student",
+      "description": "Enrolled nursing student record with class, monthly fee, portal passcode, and optional cropped avatar.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique document ID for the student.",
+          "minLength": 1,
+          "maxLength": 64,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "ownerId": {
+          "type": "string",
+          "description": "Firebase Auth UID of the school workspace owner.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "roll": {
+          "type": "string",
+          "description": "Student roll number used for student portal login.",
+          "minLength": 1,
+          "maxLength": 32
+        },
+        "name": {
+          "type": "string",
+          "description": "Full name of the student.",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "cls": {
+          "type": "string",
+          "description": "Assigned nursing class or batch.",
+          "minLength": 1,
+          "maxLength": 60
+        },
+        "fee": {
+          "type": "number",
+          "description": "Monthly tuition fee in PKR."
+        },
+        "pass": {
+          "type": "string",
+          "description": "Student portal passcode.",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "photo": {
+          "type": "string",
+          "description": "Optional cropped JPEG data URL (max 100KB).",
+          "maxLength": 100000
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when student was added."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when student was last modified."
+        }
+      },
+      "required": ["id", "ownerId", "roll", "name", "cls", "fee", "pass", "createdAt", "updatedAt"]
+    },
+    "Teacher": {
+      "title": "Teacher",
+      "description": "Faculty member assigned to a class for marking attendance and viewing reports.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique document ID for the teacher.",
+          "minLength": 1,
+          "maxLength": 64,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "ownerId": {
+          "type": "string",
+          "description": "Firebase Auth UID of the school workspace owner.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "name": {
+          "type": "string",
+          "description": "Teacher display name.",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "user": {
+          "type": "string",
+          "description": "Teacher portal username.",
+          "minLength": 1,
+          "maxLength": 40
+        },
+        "pass": {
+          "type": "string",
+          "description": "Teacher portal passcode.",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "cls": {
+          "type": "string",
+          "description": "Assigned class name.",
+          "minLength": 1,
+          "maxLength": 60
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when teacher was added."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when teacher was last modified."
+        }
+      },
+      "required": ["id", "ownerId", "name", "user", "pass", "cls", "createdAt", "updatedAt"]
+    },
+    "AttendanceRecord": {
+      "title": "AttendanceRecord",
+      "description": "Single daily attendance mark for one student.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Deterministic ID formatted as YYYY-MM-DD_studentId.",
+          "minLength": 1,
+          "maxLength": 96,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "ownerId": {
+          "type": "string",
+          "description": "Firebase Auth UID of the school workspace owner.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "date": {
+          "type": "string",
+          "description": "ISO calendar date YYYY-MM-DD.",
+          "minLength": 10,
+          "maxLength": 10,
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+        },
+        "studentId": {
+          "type": "string",
+          "description": "Referenced Student document ID.",
+          "minLength": 1,
+          "maxLength": 64,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "status": {
+          "type": "string",
+          "description": "Attendance status code.",
+          "enum": ["P", "A", "L"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when record was created."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when record was updated."
+        }
+      },
+      "required": ["id", "ownerId", "date", "studentId", "status", "createdAt", "updatedAt"]
+    },
+    "FeeRecord": {
+      "title": "FeeRecord",
+      "description": "Monthly fee payment record for one student.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Deterministic ID formatted as studentId_YYYY-MM.",
+          "minLength": 1,
+          "maxLength": 96,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "ownerId": {
+          "type": "string",
+          "description": "Firebase Auth UID of the school workspace owner.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "studentId": {
+          "type": "string",
+          "description": "Referenced Student document ID.",
+          "minLength": 1,
+          "maxLength": 64,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "month": {
+          "type": "string",
+          "description": "Billing month formatted as YYYY-MM.",
+          "minLength": 7,
+          "maxLength": 7,
+          "pattern": "^\\d{4}-\\d{2}$"
+        },
+        "amount": {
+          "type": "number",
+          "description": "Amount paid in PKR."
+        },
+        "paidDate": {
+          "type": "string",
+          "description": "Payment date formatted as YYYY-MM-DD.",
+          "minLength": 10,
+          "maxLength": 10,
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when payment was recorded."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when payment was last updated."
+        }
+      },
+      "required": ["id", "ownerId", "studentId", "month", "amount", "paidDate", "createdAt", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/schools/{schoolId}": {
+      "schema": { "$ref": "#/entities/School" },
+      "description": "School workspace root document containing school metadata and owner reference."
+    },
+    "/schools/{schoolId}/students/{studentId}": {
+      "schema": { "$ref": "#/entities/Student" },
+      "description": "Students enrolled in the school."
+    },
+    "/schools/{schoolId}/teachers/{teacherId}": {
+      "schema": { "$ref": "#/entities/Teacher" },
+      "description": "Teachers assigned to classes in the school."
+    },
+    "/schools/{schoolId}/attendance/{attId}": {
+      "schema": { "$ref": "#/entities/AttendanceRecord" },
+      "description": "Daily attendance records keyed by date and student ID."
+    },
+    "/schools/{schoolId}/fees/{feeId}": {
+      "schema": { "$ref": "#/entities/FeeRecord" },
+      "description": "Monthly fee receipts keyed by student ID and month."
+    }
+  }
+}

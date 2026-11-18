@@ -1,0 +1,8 @@
+{
+  "name": "Ayesha Amir Nursing School",
+  "description": "Online & offline cross-PC attendance, student records, monthly reports, and fee management software for Ayesha Amir Nursing School, Mamukanjan.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

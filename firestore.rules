@@ -1,0 +1,249 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global Safety Net (Default Deny)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Primitive Helpers ---
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isBootstrappedAdmin() {
+      return isVerifiedUser()
+        && request.auth.token.email == 'amirlatifmamukanjan@gmail.com';
+    }
+
+    function isValidId(id) {
+      return id is string
+        && id.size() >= 1
+        && id.size() <= 128
+        && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isValidShortId(id) {
+      return id is string
+        && id.size() >= 1
+        && id.size() <= 64
+        && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isSchoolOwner(schoolId) {
+      return isVerifiedUser()
+        && exists(/databases/$(database)/documents/schools/$(schoolId))
+        && (
+          get(/databases/$(database)/documents/schools/$(schoolId)).data.ownerId == request.auth.uid
+          || isBootstrappedAdmin()
+        );
+    }
+
+    // --- Validation Blueprints ---
+    function isValidSchool(data) {
+      return data.keys().hasAll(['ownerId', 'schoolName', 'campus', 'adminUser', 'adminPass', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['ownerId', 'schoolName', 'campus', 'adminUser', 'adminPass', 'createdAt', 'updatedAt'])
+        && isValidId(data.ownerId)
+        && (data.ownerId == request.auth.uid || isBootstrappedAdmin())
+        && data.schoolName is string && data.schoolName.size() >= 1 && data.schoolName.size() <= 120
+        && data.campus is string && data.campus.size() >= 1 && data.campus.size() <= 80
+        && data.adminUser is string && data.adminUser.size() >= 1 && data.adminUser.size() <= 40
+        && data.adminPass is string && data.adminPass.size() >= 1 && data.adminPass.size() <= 64
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidStudent(data, studentId) {
+      return data.keys().hasAll(['id', 'ownerId', 'roll', 'name', 'cls', 'fee', 'pass', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['id', 'ownerId', 'roll', 'name', 'cls', 'fee', 'pass', 'photo', 'createdAt', 'updatedAt'])
+        && isValidShortId(data.id)
+        && data.id == studentId
+        && isValidId(data.ownerId)
+        && (data.ownerId == request.auth.uid || isBootstrappedAdmin())
+        && data.roll is string && data.roll.size() >= 1 && data.roll.size() <= 32
+        && data.name is string && data.name.size() >= 1 && data.name.size() <= 100
+        && data.cls is string && data.cls.size() >= 1 && data.cls.size() <= 60
+        && data.fee is number && data.fee >= 0 && data.fee <= 1000000
+        && data.pass is string && data.pass.size() >= 1 && data.pass.size() <= 64
+        && (!('photo' in data) || (data.photo is string && data.photo.size() <= 100000))
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidTeacher(data, teacherId) {
+      return data.keys().hasAll(['id', 'ownerId', 'name', 'user', 'pass', 'cls', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['id', 'ownerId', 'name', 'user', 'pass', 'cls', 'createdAt', 'updatedAt'])
+        && isValidShortId(data.id)
+        && data.id == teacherId
+        && isValidId(data.ownerId)
+        && (data.ownerId == request.auth.uid || isBootstrappedAdmin())
+        && data.name is string && data.name.size() >= 1 && data.name.size() <= 100
+        && data.user is string && data.user.size() >= 1 && data.user.size() <= 40
+        && data.pass is string && data.pass.size() >= 1 && data.pass.size() <= 64
+        && data.cls is string && data.cls.size() >= 1 && data.cls.size() <= 60
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidAttendance(data, attId) {
+      return data.keys().hasAll(['id', 'ownerId', 'date', 'studentId', 'status', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['id', 'ownerId', 'date', 'studentId', 'status', 'createdAt', 'updatedAt'])
+        && isValidId(data.id)
+        && data.id == attId
+        && data.id.size() <= 96
+        && isValidId(data.ownerId)
+        && (data.ownerId == request.auth.uid || isBootstrappedAdmin())
+        && data.date is string && data.date.size() == 10 && data.date.matches('^\\d{4}-\\d{2}-\\d{2}$')
+        && isValidShortId(data.studentId)
+        && data.status in ['P', 'A', 'L']
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidFee(data, feeId) {
+      return data.keys().hasAll(['id', 'ownerId', 'studentId', 'month', 'amount', 'paidDate', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['id', 'ownerId', 'studentId', 'month', 'amount', 'paidDate', 'createdAt', 'updatedAt'])
+        && isValidId(data.id)
+        && data.id == feeId
+        && data.id.size() <= 96
+        && isValidId(data.ownerId)
+        && (data.ownerId == request.auth.uid || isBootstrappedAdmin())
+        && isValidShortId(data.studentId)
+        && data.month is string && data.month.size() == 7 && data.month.matches('^\\d{4}-\\d{2}$')
+        && data.amount is number && data.amount >= 0 && data.amount <= 1000000
+        && data.paidDate is string && data.paidDate.size() == 10 && data.paidDate.matches('^\\d{4}-\\d{2}-\\d{2}$')
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    // --- Collection Match Blocks ---
+    match /schools/{schoolId} {
+      allow get: if isVerifiedUser() && isValidId(schoolId) && (existing().ownerId == request.auth.uid || isBootstrappedAdmin());
+      allow list: if isVerifiedUser() && (existing().ownerId == request.auth.uid || isBootstrappedAdmin());
+      allow create: if isVerifiedUser()
+        && isValidId(schoolId)
+        && schoolId == request.auth.uid
+        && isValidSchool(incoming())
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isVerifiedUser()
+        && isValidId(schoolId)
+        && isValidSchool(incoming())
+        && (existing().ownerId == request.auth.uid || isBootstrappedAdmin())
+        && incoming().ownerId == existing().ownerId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          incoming().diff(existing()).affectedKeys().hasOnly(['adminPass', 'updatedAt'])
+          || incoming().diff(existing()).affectedKeys().hasOnly(['schoolName', 'campus', 'adminUser', 'adminPass', 'updatedAt'])
+        );
+      allow delete: if false;
+
+      match /students/{studentId} {
+        allow get: if isVerifiedUser() && isValidShortId(studentId) && isSchoolOwner(schoolId);
+        allow list: if isVerifiedUser() && (existing().ownerId == request.auth.uid || isBootstrappedAdmin());
+        allow create: if isVerifiedUser()
+          && isValidShortId(studentId)
+          && isValidStudent(incoming(), studentId)
+          && incoming().createdAt == request.time
+          && incoming().updatedAt == request.time
+          && isSchoolOwner(schoolId);
+        allow update: if isVerifiedUser()
+          && isValidShortId(studentId)
+          && isValidStudent(incoming(), studentId)
+          && isSchoolOwner(schoolId)
+          && incoming().id == existing().id
+          && incoming().ownerId == existing().ownerId
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && (
+            incoming().diff(existing()).affectedKeys().hasOnly(['photo', 'updatedAt'])
+            || incoming().diff(existing()).affectedKeys().hasOnly(['roll', 'name', 'cls', 'fee', 'pass', 'photo', 'updatedAt'])
+          );
+        allow delete: if isVerifiedUser() && isValidShortId(studentId) && isSchoolOwner(schoolId);
+      }
+
+      match /teachers/{teacherId} {
+        allow get: if isVerifiedUser() && isValidShortId(teacherId) && isSchoolOwner(schoolId);
+        allow list: if isVerifiedUser() && (existing().ownerId == request.auth.uid || isBootstrappedAdmin());
+        allow create: if isVerifiedUser()
+          && isValidShortId(teacherId)
+          && isValidTeacher(incoming(), teacherId)
+          && incoming().createdAt == request.time
+          && incoming().updatedAt == request.time
+          && isSchoolOwner(schoolId);
+        allow update: if isVerifiedUser()
+          && isValidShortId(teacherId)
+          && isValidTeacher(incoming(), teacherId)
+          && isSchoolOwner(schoolId)
+          && incoming().id == existing().id
+          && incoming().ownerId == existing().ownerId
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'user', 'pass', 'cls', 'updatedAt']);
+        allow delete: if isVerifiedUser() && isValidShortId(teacherId) && isSchoolOwner(schoolId);
+      }
+
+      match /attendance/{attId} {
+        allow get: if isVerifiedUser() && isValidId(attId) && isSchoolOwner(schoolId);
+        allow list: if isVerifiedUser() && (existing().ownerId == request.auth.uid || isBootstrappedAdmin());
+        allow create: if isVerifiedUser()
+          && isValidId(attId)
+          && isValidAttendance(incoming(), attId)
+          && incoming().createdAt == request.time
+          && incoming().updatedAt == request.time
+          && isSchoolOwner(schoolId)
+          && exists(/databases/$(database)/documents/schools/$(schoolId)/students/$(incoming().studentId));
+        allow update: if isVerifiedUser()
+          && isValidId(attId)
+          && isValidAttendance(incoming(), attId)
+          && isSchoolOwner(schoolId)
+          && incoming().id == existing().id
+          && incoming().ownerId == existing().ownerId
+          && incoming().date == existing().date
+          && incoming().studentId == existing().studentId
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt']);
+        allow delete: if isVerifiedUser() && isValidId(attId) && isSchoolOwner(schoolId);
+      }
+
+      match /fees/{feeId} {
+        allow get: if isVerifiedUser() && isValidId(feeId) && isSchoolOwner(schoolId);
+        allow list: if isVerifiedUser() && (existing().ownerId == request.auth.uid || isBootstrappedAdmin());
+        allow create: if isVerifiedUser()
+          && isValidId(feeId)
+          && isValidFee(incoming(), feeId)
+          && incoming().createdAt == request.time
+          && incoming().updatedAt == request.time
+          && isSchoolOwner(schoolId)
+          && exists(/databases/$(database)/documents/schools/$(schoolId)/students/$(incoming().studentId));
+        allow update: if isVerifiedUser()
+          && isValidId(feeId)
+          && isValidFee(incoming(), feeId)
+          && isSchoolOwner(schoolId)
+          && incoming().id == existing().id
+          && incoming().ownerId == existing().ownerId
+          && incoming().studentId == existing().studentId
+          && incoming().month == existing().month
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && incoming().diff(existing()).affectedKeys().hasOnly(['amount', 'paidDate', 'updatedAt']);
+        allow delete: if isVerifiedUser() && isValidId(feeId) && isSchoolOwner(schoolId);
+      }
+    }
+  }
+}
